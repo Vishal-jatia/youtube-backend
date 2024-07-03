@@ -1,9 +1,30 @@
+import connectDB from "./db/index.js";
 
-import express from 'express'
+connectDB();
 
-const app = express();
-const port = process.env.PORT | 3000
 
-app.listen(port, () => {
-  console.log(`Server Up and Running on port http://localhost:${port}`)
-})
+
+/* 
+
+  APPROACH - 1 (Sab ek file me kardo - Not professional)
+  import express from "express"
+
+  const app = express();
+  # ******** IIFE (Immediately Invoked Function Expression) function ********
+;(async () => {
+  try {
+    await mongoose.connect(`${process.env.MONGO_URI}/${DB_NAME}`)
+    app.on("error", (err) => {
+      console.error("Error: ", err);
+      throw err
+    })
+    console.log("DB connected")
+    app.listen(process.env.PORT, () => {
+      console.log(`Server up and running on http://localhost:${process.env.PORT}`)
+    })
+  } catch (error) {
+    console.error("Error: ",error)
+  }
+})()
+
+*/
