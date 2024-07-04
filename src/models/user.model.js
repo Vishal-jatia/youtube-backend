@@ -53,7 +53,7 @@ const userSchema = new Schema(
     }
 );
 
-// HOOK
+// HOOK or MIDDLEWARE
 userSchema.pre("save", async function (next) {
     // to prevent hashing password for every kind of change in User
     if (!this.isModified("password")) return next();
