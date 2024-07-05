@@ -55,7 +55,7 @@ const userSchema = new Schema(
 
 /* HOOK or MIDDLEWARE */
 userSchema.pre("save", async function (next) {
-    // to prevent hashing password for every kind of change in User
+    // to prevent hashing password for every kind of change other than password in User
     if (!this.isModified("password")) return next();
 
     this.password = await bcrypt.hash(this.password, 10);
