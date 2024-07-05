@@ -53,7 +53,7 @@ const userSchema = new Schema(
     }
 );
 
-// HOOK or MIDDLEWARE
+/* HOOK or MIDDLEWARE */
 userSchema.pre("save", async function (next) {
     // to prevent hashing password for every kind of change in User
     if (!this.isModified("password")) return next();
@@ -62,7 +62,7 @@ userSchema.pre("save", async function (next) {
     next();
 });
 
-// METHODS
+/* METHODS */
 userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password);
 };
