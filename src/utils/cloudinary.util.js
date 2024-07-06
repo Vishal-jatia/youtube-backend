@@ -24,4 +24,19 @@ const uploadOnCloudinary = async (localFilePath) => {
     }
 };
 
-export {uploadOnCloudinary}
+const deleteFromCloudinary = async (url) => {
+    try {
+        if(!url) return null
+        const public_id = url.split("/").slice(-1)[0].replace(".jpg", "");
+        const response = await cloudinary.uploader.destroy(public_id, {resource_type: "image"})
+        if(!response) {
+            console.log("url Incorrect");
+            return null;
+        }
+        return response
+    } catch (error) {
+        return error;
+    }
+}
+
+export {uploadOnCloudinary, deleteFromCloudinary}

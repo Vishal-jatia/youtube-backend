@@ -1,7 +1,10 @@
 import { ApiError } from "../utils/apiError.util.js";
 import asyncHandler from "../utils/asyncHandler.util.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.util.js";
+import {
+    deleteFromCloudinary,
+    uploadOnCloudinary,
+} from "../utils/cloudinary.util.js";
 import { ApiResponse } from "../utils/apiResponse.util.js";
 import jwt from "jsonwebtoken";
 
@@ -301,7 +304,13 @@ const createNewPassword = asyncHandler(async (req, res) => {
 const getCurrentUser = asyncHandler(async (req, res) => {
     return res
         .status(200)
-        .json(new ApiResponse(200, req.user._id, "created user fetched successfully"));
+        .json(
+            new ApiResponse(
+                200,
+                req.user._id,
+                "created user fetched successfully"
+            )
+        );
 });
 
 const updateUserDetails = asyncHandler(async (req, res) => {
@@ -332,33 +341,46 @@ const updateUserDetails = asyncHandler(async (req, res) => {
 const updateUserAvatar = asyncHandler(async (req, res) => {
     const avatarLocalPath = req.file?.path;
 
-    if(!avatarLocalPath) {
-        throw new ApiError("400", "Avatar file is missing. Please reupload")
+    if (!avatarLocalPath) {
+        throw new ApiError("400", "Avatar file is missing. Please reupload");
     }
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath);
-    if (!avatar.url) {
+    const newAvatar = await uploadOnCloudinary(avatarLocalPath);
+    if (!newAvatar.url) {
         throw new ApiError(500, "Couldn't add avatar image. Please add again");
     }
 
-    const user = await User.findByIdAndUpdate(req.user?._id, {
-        $set: {
-            avatar: avatar.url
-        }
-    }, {new: true}).select("-password -refreshToken")
+    const user = await User.findById(
+        req.user?._id,
+    ).select("-password -refreshToken");
 
-    if(!user) {
-        throw new ApiError(401, "Unauthorized access")
+    
+    if (!user) {
+        throw new ApiError(401, "Unauthorized access");
     }
 
-    return res.status(200).json(new ApiResponse(200, user, "Avatar updated successfully"))
-})
+    const oldAvatar = user.avatar;
+
+    user.avatar = newAvatar.url;
+    const response = await user.save({validateBeforeSave: false})
+    
+    // remove old image from cloudinary
+    await deleteFromCloudinary(oldAvatar);
+
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, response, "Avatar updated successfully"));
+});
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
     const coverImageLocalPath = req.file?.path;
 
-    if(!coverImageLocalPath) {
-        throw new ApiError("400", "Cover Image file is missing. Please reupload")
+    if (!coverImageLocalPath) {
+        throw new ApiError(
+            "400",
+            "Cover Image file is missing. Please reupload"
+        );
     }
 
     const coverImage = await uploadOnCloudinary(coverImageLocalPath);
@@ -366,18 +388,24 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Couldn't add cover image. Please add again");
     }
 
-    const user = await User.findByIdAndUpdate(req.user?._id, {
-        $set: {
-            coverImage: coverImage.url
-        }
-    }, {new: true}).select("-password -refreshToken")
+    const user = await User.findById(
+        req.user?._id,
+    ).select("-password -refreshToken");
 
-    if(!user) {
-        throw new ApiError(401, "Unauthorized access")
+    if (!user) {
+        throw new ApiError(401, "Unauthorized access");
     }
 
-    return res.status(200).json(new ApiResponse(200, user, "Cover Image updated successfully"))
-})
+    const oldCoverImage = user.coverImage;
+    await deleteFromCloudinary(oldCoverImage);
+
+    user.coverImage = coverImage.url;
+    const newUser = await user.save({validateBeforeSave: false});
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, newUser, "Cover Image updated successfully"));
+});
 
 export {
     registerUser,
@@ -388,5 +416,5 @@ export {
     getCurrentUser,
     updateUserDetails,
     updateUserAvatar,
-    updateUserCoverImage
+    updateUserCoverImage,
 };
