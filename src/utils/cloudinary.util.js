@@ -27,7 +27,8 @@ const uploadOnCloudinary = async (localFilePath) => {
 const deleteFromCloudinary = async (url) => {
     try {
         if(!url) return null
-        const public_id = url.split("/").slice(-1)[0].replace(".jpg", "");
+        const public_id = url.split("/").slice(-1)[0].replace(".jpg" || ".png" || ".mp4", "");
+        console.log(public_id)
         const response = await cloudinary.uploader.destroy(public_id, {resource_type: "image"})
         if(!response) {
             console.log("url Incorrect");

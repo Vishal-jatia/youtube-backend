@@ -11,7 +11,6 @@ const videoSchema = new Schema(
         thumbnail: {
             type: String,
             required: [true, "Thumbnail URL is required"],
-            unique: true,
         },
         owner: {
             type: Schema.Types.ObjectId,
@@ -25,6 +24,7 @@ const videoSchema = new Schema(
         },
         description: {
             type: String,
+            default: "A video on youtube. Copyrighted",
             unique: true,
         },
         duration: {
