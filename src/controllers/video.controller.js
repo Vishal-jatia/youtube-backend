@@ -8,10 +8,86 @@ import {
     deleteFromCloudinary,
     uploadOnCloudinary,
 } from "../utils/cloudinary.util.js";
+import { ObjectId } from "mongodb";
 
 const getAllVideos = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+    const {
+        page = 1,
+        limit = 10,
+        query,
+        sortBy = "_id",
+        sortType = "asc",
+        userId,
+    } = req.query;
     //TODO: get all videos based on query, sort, pagination
+
+    if (!ObjectId.isValid(userId)) {
+        throw new ApiError(400, "User invalid");
+    }
+
+    const options = {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+        sort: { [sortBy]: sortType === "asc" ? 1 : -1 },
+    };
+
+    const matchStage = {
+        $match: {
+            owner: new ObjectId(userId),
+        },
+    };
+
+    const lookupStage = {
+        $lookup: {
+            from: "users",
+            localField: "owner",
+            foreignField: "_id",
+            as: "owner_info",
+            pipeline: [
+                {
+                    $project: {
+                        username: 1,
+                        fullName: 1,
+                        avatar: 1,
+                        coverImage: 1,
+                    },
+                },
+            ],
+        },
+    };
+
+    const projectStage = {
+        $project: {
+            owner_info: 1,
+            videoFile: 1,
+        },
+    };
+
+    const sortStage = {
+        $sort: {
+            [sortBy]: sortType === "asc" ? 1 : -1
+        }
+    }
+
+    try {
+        const videos = await Video.aggregatePaginate(
+            Video.aggregate([matchStage, lookupStage, projectStage]),
+            options
+        );
+
+        if (!videos) {
+            throw new ApiError(400, "Can't get videos");
+        }
+
+        return res
+            .status(200)
+            .json(new ApiResponse(200, videos, "Videos fetched successfully"));
+    } catch (error) {
+        console.log(error);
+        return res
+            .status(500)
+            .json(new ApiResponse(500, null, "Internal Server Error"));
+    }
 });
 
 const publishAVideo = asyncHandler(async (req, res) => {
@@ -131,6 +207,16 @@ const updateVideo = asyncHandler(async (req, res) => {
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
     //TODO: delete video
+
+    const deletedVideo = await Video.findByIdAndDelete(videoId);
+
+    if (!deletedVideo) {
+        throw new ApiError(400, "Unauthorized access");
+    }
+
+    return res
+        .status(200)
+        .json(200, deletedVideo, "Successfully deleted video");
 });
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
@@ -141,9 +227,9 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
         [
             {
                 $set: {
-                    isPublished: { $eq: [false, "$isPublished"] }
-                }
-            }
+                    isPublished: { $eq: [false, "$isPublished"] },
+                },
+            },
         ],
         { new: true }
     );
