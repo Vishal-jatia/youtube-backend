@@ -12,7 +12,6 @@
 
 <p align="center">
 <a href="https://github.com/Vishal-jatia/youtube-backend">📱 Visit this Project</a>
-</p>
 <a href="https://app.eraser.io/workspace/JqCDVp5R1Pp8euYKkE9D">↗️ ER model link</a>
 </p>
 
